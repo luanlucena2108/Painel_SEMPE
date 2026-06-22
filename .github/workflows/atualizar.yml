@@ -5,12 +5,17 @@ on:
     - cron: '0 10 * * *'   # 07:00 horário de Brasília (UTC-3)
   workflow_dispatch:         # permite rodar manualmente pelo GitHub
 
+permissions:
+  contents: write
+
 jobs:
   gerar-json:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Instalar Python
         uses: actions/setup-python@v5
