@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEMPE — Painel de Indicadores Estratégicos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red: #CC0000; --red-dark: #A30000; --red-light: #F9EAEA; --red-mid: #E8C0C0;
+    --green: #1D6B3A; --green-light: #E6F4EC;
+    --blue: #174FA3; --blue-light: #E5EDFA;
+    --gold: #9A6B00; --gold-light: #FDF5E0;
+    --purple: #6B3FA0; --purple-light: #F3EEF9;
+    --orange: #C05A00; --orange-light: #FDF0E5;
+    --teal: #0B7B6B; --teal-light: #E4F4F1;
+    --gray-50: #F8F8F8; --gray-100: #F0F0F0; --gray-200: #E2E2E2;
+    --gray-400: #9A9A9A; --gray-600: #5A5A5A; --gray-800: #1E1E1E; --white: #FFFFFF;
+    --font: 'Inter', system-ui, sans-serif;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08); --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --radius: 8px; --radius-sm: 5px;
+  }
+  body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); font-size: 13px; }
+  .dash { max-width: 1100px; margin: 24px auto; background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-md); }
+  .header { background: linear-gradient(135deg, #CC0000 0%, #A30000 100%); padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-logo { width: 38px; height: 38px; border-radius: 8px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .header-eyebrow { font-size: 10px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 3px; }
+  .header-title { font-size: 16px; font-weight: 600; color: #fff; }
+  .header-badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); font-size: 11px; color: rgba(255,255,255,0.9); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+  .nav { display: flex; background: var(--white); border-bottom: 1.5px solid var(--gray-100); padding: 0 28px; overflow-x: auto; }
+  .nav button { background: none; border: none; cursor: pointer; font-family: var(--font); font-size: 12.5px; font-weight: 500; color: var(--gray-400); padding: 14px 16px; border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color .15s, border-color .15s; }
+  .nav button:hover:not(.active) { color: var(--gray-800); }
+  .nav button.active { color: var(--red); border-bottom-color: var(--red); }
+  .body { padding: 24px 28px; background: var(--gray-50); min-height: 460px; }
+  .tab-content { display: none; } .tab-content.active { display: block; }
+  .sec { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .9px; color: var(--gray-400); margin-bottom: 10px; margin-top: 20px; display: flex; align-items: center; gap: 8px; }
+  .sec:first-child { margin-top: 0; }
+  .sec::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .kpi { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-sm); transition: box-shadow .15s; }
+  .kpi:hover { box-shadow: var(--shadow-md); }
+  .kpi.destaque { border-top: 3px solid var(--red); }
+  .kpi .tag { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; padding: 2px 7px; border-radius: 3px; display: inline-block; margin-bottom: 6px; }
+  .tag-dpf { background: var(--red-light); color: var(--red-dark); }
+  .tag-dap { background: var(--green-light); color: var(--green); }
+  .tag-de { background: var(--blue-light); color: var(--blue); }
+  .kpi .lbl { font-size: 10.5px; color: var(--gray-600); line-height: 1.4; margin-bottom: 6px; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: var(--gray-800); line-height: 1.1; }
+  .kpi .val.red { color: var(--red); }
+  .kpi .note { font-size: 10px; color: var(--gray-400); margin-top: 4px; }
+  .kpi .delta { font-size: 10.5px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+  .delta.down { color: #C0392B; } .delta.up { color: var(--green); }
+  .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 9px 14px; font-size: 10px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--gray-100); color: var(--gray-800); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; } tr:hover td { background: #FFF7F7; }
+  .pill { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+  .pill-s { background: var(--green-light); color: var(--green); }
+  .pill-n { background: var(--gray-100); color: var(--gray-600); }
+  .pill-p { background: var(--red-light); color: var(--red-dark); }
+  .val-num { font-weight: 600; color: var(--gray-800); } .val-red { font-weight: 600; color: var(--red); } .val-muted { color: var(--gray-400); font-style: italic; }
+  .bar-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+  .bar-title { font-size: 11px; font-weight: 600; color: var(--gray-600); margin-bottom: 14px; }
+  .br { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; } .br:last-of-type { margin-bottom: 0; }
+  .bl { font-size: 11px; color: var(--gray-600); min-width: 160px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bt { flex: 1; height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
+  .bf { height: 100%; border-radius: 4px; } .bv { font-size: 11px; font-weight: 600; color: var(--gray-800); min-width: 44px; text-align: right; }
+  .bar-footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--gray-100); font-size: 11px; color: var(--gray-600); }
+  .trend-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .yr-box { flex: 1; text-align: center; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 12px 8px; box-shadow: var(--shadow-sm); }
+  .yr-box.cur { border-color: var(--red); background: var(--red-light); }
+  .yr-box .y { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-400); margin-bottom: 5px; }
+  .yr-box .v { font-size: 15px; font-weight: 700; color: var(--gray-800); }
+  .yr-box.cur .y { color: var(--red); } .yr-box.cur .v { color: var(--red); }
+  .dir-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .dir-block { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+  .dir-band { height: 4px; } .dir-inner { padding: 14px 16px; }
+  .dir-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .dir-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .dir-name { font-size: 12.5px; font-weight: 600; color: var(--gray-800); } .dir-desc { font-size: 10px; color: var(--gray-400); }
+  .mini-kpis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .mk { text-align: center; padding: 8px 4px; background: var(--gray-50); border-radius: 5px; border: 1px solid var(--gray-100); }
+  .mk .mv { font-size: 14px; font-weight: 700; color: var(--gray-800); } .mk .ml { font-size: 9.5px; color: var(--gray-400); margin-top: 2px; line-height: 1.3; }
+  .dois { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .kpi-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .kpi-strip .kpi { border-top: 3px solid var(--red); }
+  .fn { font-size: 10px; color: var(--gray-400); margin-top: 6px; font-style: italic; }
+  /* ── Jornada do Empreendedor ── */
+  .score-hero { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 20px; }
+  .score-circle { width: 72px; height: 72px; border-radius: 50%; background: var(--red); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+  .score-circle .sc-val { font-size: 24px; font-weight: 700; line-height: 1; }
+  .score-circle .sc-lbl { font-size: 9px; font-weight: 500; opacity: .85; text-transform: uppercase; letter-spacing: .5px; }
+  .score-info { flex: 1; }
+  .score-info h3 { font-size: 14px; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
+  .score-info p { font-size: 11px; color: var(--gray-600); line-height: 1.5; }
+  .score-badge { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: var(--orange-light); color: var(--orange); border: 1px solid #F0C090; }
+  .escala-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; }
+  .esc-item { border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; }
+  .esc-item .esc-range { font-size: 12px; font-weight: 700; }
+  .esc-item .esc-label { font-size: 10px; margin-top: 2px; }
+  .dim-list { display: flex; flex-direction: column; gap: 8px; }
+  .dim-row { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-sm); }
+  .dim-badge { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .dim-info { flex: 1; min-width: 0; }
+  .dim-name { font-size: 12px; font-weight: 600; color: var(--gray-800); }
+  .dim-sub { font-size: 10px; color: var(--gray-400); margin-top: 1px; }
+  .dim-bar-wrap { flex: 2; display: flex; align-items: center; gap: 8px; }
+  .dim-bar-bg { flex: 1; height: 10px; background: var(--gray-100); border-radius: 5px; overflow: hidden; }
+  .dim-bar-fill { height: 100%; border-radius: 5px; }
+  .dim-score { font-size: 14px; font-weight: 700; min-width: 28px; text-align: right; }
+  .dim-peso { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 3px; background: var(--gray-100); color: var(--gray-600); min-width: 34px; text-align: center; }
+  .tres { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .mun-search { width: 100%; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 8px 12px; font-family: var(--font); font-size: 12px; color: var(--gray-800); outline: none; margin-bottom: 10px; }
+  .mun-search:focus { border-color: var(--red); }
+  .mun-table-wrap { max-height: 260px; overflow-y: auto; }
+  @media (max-width: 640px) {
+    .header { padding: 16px; } .nav { padding: 0 12px; } .body { padding: 16px 14px; }
+    .dois { grid-template-columns: 1fr; } .mini-kpis { grid-template-columns: 1fr 1fr; }
+    .dir-grid { grid-template-columns: 1fr; } .kpi-strip { grid-template-columns: 1fr 1fr; }
+    .bl { min-width: 110px; max-width: 110px; }
+  }
+</style>
+</head>
+<body>
+<div class="dash">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">🏛</div>
+      <div>
+        <div class="header-eyebrow">Governo do Estado de São Paulo · SDE · SEMPE</div>
+        <div class="header-title">Painel de Indicadores Estratégicos</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="upd-label" style="font-size:10px;color:rgba(255,255,255,0.6)">Carregando…</span>
+      <div class="header-badge" id="periodo-badge">—</div>
+    </div>
+  </div>
+  <div style="height:3px;background:rgba(255,255,255,0.2)"><div id="lbar" style="height:100%;background:rgba(255,255,255,0.7);width:0%;transition:width .5s"></div></div>
+  <div class="nav">
+    <button class="active" onclick="tab('geral',this)">Visão Geral</button>
+    <button onclick="tab('dpf',this)">Políticas de Fomento</button>
+    <button onclick="tab('de',this)">Empreendedorismo</button>
+    <button onclick="tab('dap',this)">Aumento de Produtividade</button>
+    <button onclick="tab('jornada',this)">Jornada do Empreendedor</button>
+  </div>
+  <div class="body">
+    <div id="tab-geral" class="tab-content active">
+      <div class="sec">Indicadores prioritários — PPA + Programa de Metas</div>
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi destaque"><div class="tag tag-dpf">Fomento</div><div class="lbl">Operações de crédito</div><div class="val red">11.623</div><div class="delta down">▼ 14% vs 2023</div></div>
+        <div class="kpi destaque"><div class="tag tag-dpf">Fomento</div><div class="lbl">Montante desembolsado</div><div class="val red" style="font-size:17px" id="kpi-montante">R$ 187,8 mi</div><div class="delta down">▼ 19% vs 2023</div></div>
+        <div class="kpi destaque"><div class="tag tag-dap">Produtividade</div><div class="lbl">Municípios na REDESIM</div><div class="val red">642</div><div class="delta up">▲ 99,5% do estado</div></div>
+        <div class="kpi destaque"><div class="tag tag-dap">Produtividade</div><div class="lbl">Empresas abertas – Facilita SP</div><div class="val red">56.000</div><div class="note">Últimos 6 meses</div></div>
+        <div class="kpi destaque"><div class="tag tag-de">Empreendedorismo</div><div class="lbl">Concluintes cursos artesanais</div><div class="val red">14.274</div><div class="delta up">▲ 89% das vagas</div></div>
+        <div class="kpi destaque"><div class="tag tag-de">Empreendedorismo</div><div class="lbl">Carteiras artesão emitidas</div><div class="val red">5.897</div><div class="note">PAB + Prog. Empreendedor</div></div>
+      </div>
+      <div class="sec">Por diretoria</div>
+      <div class="dir-grid">
+        <div class="dir-block"><div class="dir-band" style="background:var(--red)"></div><div class="dir-inner"><div class="dir-head"><div class="dir-icon" style="background:var(--red-light)">💳</div><div><div class="dir-name">Políticas de Fomento</div><div class="dir-desc">Banco do Povo Paulista · Sistema BPP</div></div></div><div class="mini-kpis"><div class="mk"><div class="mv" style="color:var(--red)">11.623</div><div class="ml">Operações 2025</div></div><div class="mk"><div class="mv" style="color:var(--red)">R$187,8mi</div><div class="ml">Montante 2025</div></div><div class="mk"><div class="mv">547</div><div class="ml">Municípios conv.</div></div><div class="mk"><div class="mv">R$16.155</div><div class="ml">Tíquete médio</div></div><div class="mk"><div class="mv">79%</div><div class="ml">Adimplência</div></div><div class="mk"><div class="mv" style="color:#C0392B">▼14%</div><div class="ml">Var. vs 2023</div></div></div></div></div>
+        <div class="dir-block"><div class="dir-band" style="background:var(--green)"></div><div class="dir-inner"><div class="dir-head"><div class="dir-icon" style="background:var(--green-light)">🏙</div><div><div class="dir-name">Aumento de Produtividade</div><div class="dir-desc">Facilita SP · REDESIM · Lib. Econômica</div></div></div><div class="mini-kpis"><div class="mk"><div class="mv" style="color:var(--red)">642</div><div class="ml">Aderentes REDESIM</div></div><div class="mk"><div class="mv" style="color:var(--red)">56.000</div><div class="ml">Empresas (6m)</div></div><div class="mk"><div class="mv" style="color:var(--red)">264</div><div class="ml">Municípios c/ selo</div></div><div class="mk"><div class="mv">2h25</div><div class="ml">Horas p/ abrir</div></div><div class="mk"><div class="mv">927</div><div class="ml">Ativ. s/ alvará</div></div><div class="mk"><div class="mv">36,3%</div><div class="ml">% c/ selo</div></div></div></div></div>
+        <div class="dir-block"><div class="dir-band" style="background:var(--blue)"></div><div class="dir-inner"><div class="dir-head"><div class="dir-icon" style="background:var(--blue-light)">🎨</div><div><div class="dir-name">Empreendedorismo</div><div class="dir-desc">QualificaSP · Artesão Empreendedor</div></div></div><div class="mini-kpis"><div class="mk"><div class="mv" style="color:var(--red)">14.274</div><div class="ml">Concluintes artes.</div></div><div class="mk"><div class="mv" style="color:var(--red)">4.276</div><div class="ml">Carteiras PAB</div></div><div class="mk"><div class="mv" style="color:var(--red)">1.621</div><div class="ml">Cart. empreend.</div></div><div class="mk"><div class="mv">16.000</div><div class="ml">Vagas artesanais</div></div><div class="mk"><div class="mv">250</div><div class="ml">Inscritos feiras</div></div><div class="mk"><div class="mv">81</div><div class="ml">Selecionados feiras</div></div></div></div></div>
+      </div>
+    </div>
+    <div id="tab-dpf" class="tab-content">
+      <div class="sec">KPIs prioritários — PPA + Programa de Metas</div>
+      <div class="kpi-strip"><div class="kpi"><div class="lbl">Operações de crédito (2025)</div><div class="val red">11.623</div><div class="delta down">▼ 14% vs 2023 (14.458)</div></div><div class="kpi"><div class="lbl">Municípios conveniados</div><div class="val red">547</div><div class="note">PPA + Prioridade alta</div></div><div class="kpi"><div class="lbl">Taxa de adimplência (2025)</div><div class="val red">79%</div><div class="delta down">▼ vs 82% em 2024</div></div></div>
+      <div class="sec">Evolução anual — Banco do Povo Paulista</div>
+      <div class="dois" style="margin-bottom:20px">
+        <div><div class="bar-card"><div class="bar-title">Número de operações</div><div class="trend-row"><div class="yr-box"><div class="y">2023</div><div class="v" id="kpi-op-2023">14.458</div></div><div class="yr-box"><div class="y">2024</div><div class="v" id="kpi-op-2024">13.533</div></div><div class="yr-box cur"><div class="y">2025</div><div class="v" id="kpi-op-2025">11.623</div></div></div></div></div>
+        <div><div class="bar-card"><div class="bar-title">Montante desembolsado (R$ mi)</div><div class="trend-row"><div class="yr-box"><div class="y">2023</div><div class="v" id="kpi-val-2023">R$ 232,4</div></div><div class="yr-box"><div class="y">2024</div><div class="v" id="kpi-val-2024">R$ 208,0</div></div><div class="yr-box cur"><div class="y">2025</div><div class="v" id="kpi-val-2025">R$ 187,8</div></div></div></div></div>
+      </div>
+      <div class="sec">Todos os indicadores</div>
+      <div class="card"><table><thead><tr><th style="width:44%">Indicador</th><th>2023</th><th>2024</th><th>2025</th><th>PPA</th><th>Prioridade</th></tr></thead><tbody><tr><td>Nº de operações de crédito</td><td class="val-num">14.458</td><td class="val-num">13.533</td><td class="val-red">11.623</td><td><span class="pill pill-s">Sim</span></td><td><span class="pill pill-p">Alta</span></td></tr><tr><td>Taxa de adimplência</td><td>—</td><td class="val-num">81,8%</td><td class="val-red">79,0%</td><td><span class="pill pill-s">Sim</span></td><td><span class="pill pill-p">Alta</span></td></tr><tr><td>Montante desembolsado</td><td>R$ 232,4 mi</td><td>R$ 208,0 mi</td><td class="val-red">R$ 187,8 mi</td><td><span class="pill pill-n">Não</span></td><td><span class="pill pill-n">—</span></td></tr><tr><td>Tíquete médio por operação</td><td>R$ 16.074</td><td>R$ 15.367</td><td class="val-red">R$ 16.155</td><td><span class="pill pill-n">Não</span></td><td><span class="pill pill-n">—</span></td></tr><tr><td>Municípios conveniados</td><td class="val-num">554</td><td class="val-num">557</td><td class="val-red">547</td><td><span class="pill pill-n">Não</span></td><td><span class="pill pill-p">Alta</span></td></tr></tbody></table></div>
+    </div>
+    <div id="tab-de" class="tab-content">
+      <div class="sec">KPIs principais</div>
+      <div class="kpi-grid" style="margin-bottom:20px"><div class="kpi destaque"><div class="lbl">Concluintes artesanais</div><div class="val red" id="kpi-de-concluintes">14.274</div><div class="delta up">▲ 89% das vagas ofertadas</div></div><div class="kpi destaque"><div class="lbl">Carteiras artesão (PAB)</div><div class="val red" id="kpi-de-pab">4.276</div><div class="note">Jan/2023 – Abr/2026</div></div><div class="kpi destaque"><div class="lbl">Carteiras prog. empreendedor</div><div class="val red" id="kpi-de-emp">1.621</div><div class="note">Nov/2025 – Abr/2026</div></div><div class="kpi"><div class="lbl">Artesãos inscritos (feiras)</div><div class="val">250</div><div class="note">Taxa de seleção: 32%</div></div><div class="kpi"><div class="lbl">Artesãos selecionados</div><div class="val">81</div><div class="note">de 250 inscritos</div></div><div class="kpi"><div class="lbl">Missões itinerantes</div><div class="val">8</div><div class="note">Realizadas</div></div></div>
+      <div class="dois">
+        <div><div class="sec">Funil QualificaSP Artesanal</div><div class="bar-card"><div class="br"><div class="bl">Vagas ofertadas</div><div class="bt"><div class="bf" style="width:100%;background:var(--red)"></div></div><div class="bv">16.000</div></div><div class="br"><div class="bl">Inscritos</div><div class="bt"><div class="bf" style="width:89%;background:var(--red)"></div></div><div class="bv">14.274</div></div><div class="br"><div class="bl">Matriculados</div><div class="bt"><div class="bf" style="width:89%;background:var(--gray-400)"></div></div><div class="bv">14.274</div></div><div class="br"><div class="bl">Concluintes</div><div class="bt"><div class="bf" style="width:89%;background:var(--gray-400)"></div></div><div class="bv">14.274</div></div></div><div class="sec">Carteiras artesão</div><div class="card"><table><thead><tr><th>Programa</th><th>Emissões</th><th>Renovações</th></tr></thead><tbody><tr><td>PAB (Jan/23–Abr/26)</td><td class="val-red">4.276</td><td class="val-num">592</td></tr><tr><td>Prog. Empreendedor (Nov/25–Abr/26)</td><td class="val-red">1.621</td><td class="val-num">0</td></tr></tbody></table></div></div>
+        <div><div class="sec">QualificaSP Empreenda</div><div class="card"><table><thead><tr><th>Indicador</th><th>Valor</th></tr></thead><tbody><tr><td>Vagas ofertadas</td><td class="val-muted">Aguardando</td></tr><tr><td>Inscritos (contratos)</td><td class="val-muted">Aguardando</td></tr><tr><td>Inscritos (doação)</td><td class="val-muted">Aguardando</td></tr><tr><td>Concluintes (contratos)</td><td class="val-muted">Aguardando</td></tr><tr><td>Concluintes (doação)</td><td class="val-muted">Aguardando</td></tr><tr><td>Taxa de concluintes</td><td class="val-muted">Aguardando</td></tr><tr><td>Turmas ofertadas</td><td class="val-muted">Aguardando</td></tr></tbody></table></div><p class="fn">* Indicadores QualificaSP Empreenda pendentes de preenchimento na base.</p></div>
+      </div>
+    </div>
+    <div id="tab-dap" class="tab-content">
+      <div class="sec">KPIs prioritários — PPA + Programa de Metas</div>
+      <div class="kpi-strip"><div class="kpi"><div class="lbl">Atividades s/ alvará (PPA)</div><div class="val red" id="kpi-dap-alvara">927</div><div class="note">PPA + Prog. Metas + Bonif.</div></div><div class="kpi"><div class="lbl">Municípios aderentes REDESIM</div><div class="val red" id="kpi-dap-redesim">642</div><div class="delta up">▲ 99,5% do estado</div></div><div class="kpi"><div class="lbl">Municípios operando REDESIM</div><div class="val red" id="kpi-dap-operando">591</div><div class="note">92% dos aderentes</div></div></div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-bottom:20px"><div class="kpi"><div class="lbl">Municípios c/ viab. automática</div><div class="val">478</div><div class="note">74% dos operantes</div></div><div class="kpi"><div class="lbl">Empresas abertas (6 meses)</div><div class="val">56.000</div><div class="note">Portal Facilita SP</div></div><div class="kpi"><div class="lbl">Horas p/ abrir empresa</div><div class="val">2h25</div><div class="note">Portal Facilita SP</div></div><div class="kpi"><div class="lbl">Municípios c/ deliberação estadual</div><div class="val">630</div><div class="note">Classif. de risco</div></div></div>
+      <div class="dois">
+        <div><div class="sec">Selos Facilita SP</div><div class="bar-card"><div class="br"><div class="bl">Bronze</div><div class="bt"><div class="bf" style="width:100%;background:#7B4D2E"></div></div><div class="bv">220</div></div><div class="br"><div class="bl">Inovação</div><div class="bt"><div class="bf" style="width:11%;background:var(--red)"></div></div><div class="bv">25</div></div><div class="br"><div class="bl">Prata</div><div class="bt"><div class="bf" style="width:4.5%;background:var(--gray-400)"></div></div><div class="bv">10</div></div><div class="br"><div class="bl">Ouro</div><div class="bt"><div class="bf" style="width:4%;background:var(--gold)"></div></div><div class="bv">9</div></div><div class="bar-footer">Total com algum selo: <strong>264 municípios (36,3% do estado)</strong></div></div></div>
+        <div><div class="sec">Funil de automação REDESIM</div><div class="bar-card"><div class="br"><div class="bl">Aderentes</div><div class="bt"><div class="bf" style="width:100%;background:var(--red)"></div></div><div class="bv">642</div></div><div class="br"><div class="bl">Operando</div><div class="bt"><div class="bf" style="width:92%;background:var(--red)"></div></div><div class="bv">591</div></div><div class="br"><div class="bl">Viab. automática</div><div class="bt"><div class="bf" style="width:74%;background:var(--gray-400)"></div></div><div class="bv">478</div></div><div class="br"><div class="bl">Insc. municipal auto.</div><div class="bt"><div class="bf" style="width:10%;background:var(--gray-400)"></div></div><div class="bv">65</div></div></div><div class="sec">Liberdade econômica</div><div class="card"><table><thead><tr><th>Indicador</th><th>Valor</th></tr></thead><tbody><tr><td>Atividades dispensadas de alvará</td><td class="val-red">927</td></tr><tr><td>Municípios c/ deliberação estadual</td><td class="val-num">630</td></tr><tr><td>Fóruns de liberd. econômica realizados</td><td class="val-num">3</td></tr><tr><td>% municípios aderentes ao programa</td><td class="val-num">1%</td></tr></tbody></table></div></div>
+      </div>
+    </div>
+    <div id="tab-jornada" class="tab-content">
+
+      <!-- Metas PPA -->
+      <div class="sec">Metas PPA 2024–2027</div>
+      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi destaque"><div class="lbl">Operações de microcrédito / ano</div><div class="val red">26.250</div><div class="note">Meta PPA — BPP</div></div>
+        <div class="kpi destaque"><div class="lbl">Vagas de qualificação / ano</div><div class="val red">34.000</div><div class="note">Meta LOA/PPA</div></div>
+        <div class="kpi destaque"><div class="lbl">Municípios com diagnóstico</div><div class="val red">100</div><div class="note">Meta 2026 — Etapa 1</div></div>
+        <div class="kpi destaque"><div class="lbl">Ativid. econômicas s/ alvará</div><div class="val red">927</div><div class="note">Meta PPA — Facilita SP</div></div>
+      </div>
+
+      <!-- Indicadores por etapa + BPP lado a lado -->
+      <div class="dois" style="margin-bottom:14px">
+
+        <!-- Indicadores por etapa -->
+        <div>
+          <div class="sec">Indicadores por Etapa</div>
+          <div class="card">
+            <table>
+              <thead><tr><th>Etapa</th><th>Indicador PPA</th><th>Meta</th><th>Realizado</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="pill" style="background:#E5EDFA;color:#174FA3">1 · Conhecer</span></td>
+                  <td>Municípios c/ diagnóstico atualizado</td>
+                  <td class="val-num">100</td>
+                  <td class="val-muted">Em andamento</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--green-light);color:var(--green)">2 · Simplificar</span></td>
+                  <td>Municípios aderentes ao Facilita SP</td>
+                  <td class="val-num">645</td>
+                  <td class="val-red">645 ✔</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--green-light);color:var(--green)">2 · Simplificar</span></td>
+                  <td>Atividades dispensadas de alvará</td>
+                  <td class="val-num">—</td>
+                  <td class="val-red">927</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--orange-light);color:var(--orange)">3 · Qualificar</span></td>
+                  <td>Vagas de qualificação ofertadas / ano</td>
+                  <td class="val-num">34.000</td>
+                  <td class="val-muted">Em andamento</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--orange-light);color:var(--orange)">3 · Qualificar</span></td>
+                  <td>Trilhas FDC (Fundação Dom Cabral)</td>
+                  <td class="val-num">2.000</td>
+                  <td class="val-red">Aberto</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--orange-light);color:var(--orange)">3 · Qualificar</span></td>
+                  <td>Ela Empreende (Itaú Social)</td>
+                  <td class="val-num">5.000</td>
+                  <td class="val-red">Aberto</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--orange-light);color:var(--orange)">3 · Qualificar</span></td>
+                  <td>QualificaSP Empreenda (Sequencial)</td>
+                  <td class="val-num">10.000</td>
+                  <td class="val-muted">Em breve</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--red-light);color:var(--red-dark)">4 · Capitalizar</span></td>
+                  <td>Operações de microcrédito BPP / ano</td>
+                  <td class="val-num">26.250</td>
+                  <td class="val-red">11.623 <span style="font-weight:400;font-size:10px;color:var(--gray-400)">(2025)</span></td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--red-light);color:var(--red-dark)">4 · Capitalizar</span></td>
+                  <td>Municípios conveniados BPP</td>
+                  <td class="val-num">—</td>
+                  <td class="val-red">547</td>
+                </tr>
+                <tr>
+                  <td><span class="pill" style="background:var(--red-light);color:var(--red-dark)">4 · Capitalizar</span></td>
+                  <td>Taxa de adimplência BPP</td>
+                  <td class="val-num">—</td>
+                  <td class="val-red">79%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Métricas BPP -->
+        <div>
+          <div class="sec">Métricas BPP — Linhas de Crédito</div>
+          <div class="card">
+            <table>
+              <thead><tr><th>Linha / Perfil</th><th>Valor máx.</th><th>Taxa a.m.</th><th>Prazo</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Empreenda Rápido</strong> s/ CNPJ</td><td class="val-num">R$ 15.000</td><td class="val-num">0,80%</td><td class="val-num">24 m · 60d car.</td></tr>
+                <tr><td><strong>Empreenda Rápido</strong> c/ CNPJ</td><td class="val-red">R$ 21.000</td><td class="val-red">0,35%</td><td class="val-num">30 m · 60d car.</td></tr>
+                <tr><td><strong>Empreenda Mulher</strong> s/ CNPJ</td><td class="val-num">R$ 15.000</td><td class="val-num">0,80%</td><td class="val-num">30 m · 90d car.</td></tr>
+                <tr><td><strong>Empreenda Mulher</strong> c/ CNPJ</td><td class="val-red">R$ 21.000</td><td class="val-red">0,35%</td><td class="val-num">36 m · 90d car.</td></tr>
+                <tr><td><strong>Empreenda Afro</strong> s/ CNPJ</td><td class="val-num">R$ 15.000</td><td class="val-num">0,80%</td><td class="val-num">30 m · 90d car.</td></tr>
+                <tr><td><strong>Empreenda Afro</strong> c/ CNPJ</td><td class="val-red">R$ 21.000</td><td class="val-red">0,35%</td><td class="val-num">36 m · 90d car.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="sec" style="margin-top:14px">Score de Maturidade — Limeira/SP (ref.)</div>
+          <div class="bar-card">
+            <div class="br"><div class="bl">D1 Vitalidade Econômica</div><div class="bt"><div class="bf" style="width:78%;background:#174FA3"></div></div><div class="bv" style="color:#174FA3">7,8</div></div>
+            <div class="br"><div class="bl">D2 Facilita SP</div><div class="bt"><div class="bf" style="width:65%;background:#1D6B3A"></div></div><div class="bv" style="color:#1D6B3A">6,5</div></div>
+            <div class="br"><div class="bl">D3 Crédito / BPP</div><div class="bt"><div class="bf" style="width:52%;background:var(--red)"></div></div><div class="bv" style="color:var(--red)">5,2</div></div>
+            <div class="br"><div class="bl">D4 Qualificação</div><div class="bt"><div class="bf" style="width:42%;background:var(--orange)"></div></div><div class="bv" style="color:var(--orange)">4,2</div></div>
+            <div class="br"><div class="bl">D5 Artesanato e Comercialização</div><div class="bt"><div class="bf" style="width:48%;background:var(--purple)"></div></div><div class="bv" style="color:var(--purple)">4,8</div></div>
+            <div class="br"><div class="bl">D6 Ecossistema Institucional</div><div class="bt"><div class="bf" style="width:55%;background:var(--teal)"></div></div><div class="bv" style="color:var(--teal)">5,5</div></div>
+            <div class="bar-footer">Score geral: <strong>5,5 — Intermediário</strong> &nbsp;|&nbsp; Pesos: D3 25% · D4 20% · D1/D2/D6 15% · D5 10%</div>
+          </div>
+        </div>
+
+      </div>
+      <p class="fn">Ref. PPA 2024–2027 · Objetivo VIII · Dados: Maio/2026</p>
+
+      <!-- Horizonte estratégico -->
+      <div class="sec" style="margin-top:20px">Horizonte Estratégico</div>
+      <div class="tres">
+        <div class="bar-card" style="border-top:3px solid var(--orange)">
+          <div class="bar-title">📅 2026 — Consolidação</div>
+          <div style="font-size:11px;color:var(--gray-600);line-height:1.8">
+            ✔ Plataforma digital BPP (100% online)<br>
+            ✔ 100 municípios com diagnóstico<br>
+            ✔ Chamamento OSC — 5 lotes · 24.000 qualificados<br>
+            ✔ Score SEMPE operacional (645 municípios)<br>
+            ✔ Ela Empreende · FDC · QualificaSP Empreenda
+          </div>
+        </div>
+        <div class="bar-card" style="border-top:3px solid var(--red)">
+          <div class="bar-title">🚀 2027 — Expansão</div>
+          <div style="font-size:11px;color:var(--gray-600);line-height:1.8">
+            • OSC Ciclo 2: R$ 6M · 8 lotes · 30.000 qualificados<br>
+            • BPP 3.0: integração Procred 360<br>
+            • Facilita SP: selo Inovação + sandbox regulatório<br>
+            • Marketplace artesão SP (e-commerce)<br>
+            • 1ª missão internacional — PAB + InvestSP + Apex
+          </div>
+        </div>
+        <div class="bar-card" style="border-top:3px solid var(--teal)">
+          <div class="bar-title">🏛 2029–2030 — Institucionalização</div>
+          <div style="font-size:11px;color:var(--gray-600);line-height:1.8">
+            • Lei Estadual de Empreendedorismo (PL à ALESP)<br>
+            • Dashboard público + ranking 645 municípios<br>
+            • Avaliação de impacto BPP — SEADE/FGV<br>
+            • Centro de Dados do Empreendedorismo Paulista<br>
+            • Modelo SP replicado em 3 estados
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+// ── Navegação de abas ────────────────────────────────────────
+function tab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── URL do Google Apps Script (substitua após publicar) ──────
+const APPS_SCRIPT_URL = './dados.json'; // gerado automaticamente pelo GitHub Actions
+
+// ── Mapeamento: chave JSON → seletor CSS → campo a atualizar ─
+// Formato: [seletor_do_elemento, propriedade_do_json]
+const MAPA = [
+  // GERAL
+  { sel: '#kpi-op-credito',         key: 'geral.op_credito',            fmt: 'num' },
+  { sel: '#kpi-montante',           key: 'geral.montante',              fmt: 'rs_mi' },
+  { sel: '#kpi-redesim',            key: 'geral.municipios_redesim',    fmt: 'num' },
+  { sel: '#kpi-empresas-facilita',  key: 'geral.empresas_facilita',     fmt: 'num' },
+  { sel: '#kpi-concluintes',        key: 'geral.concluintes_artesanais',fmt: 'num' },
+  { sel: '#kpi-carteiras',          key: 'geral.carteiras_artesao',     fmt: 'num' },
+  // DPF
+  { sel: '#kpi-op-2025',            key: 'dpf.op_2025',                 fmt: 'num' },
+  { sel: '#kpi-op-2024',            key: 'dpf.op_2024',                 fmt: 'num' },
+  { sel: '#kpi-op-2023',            key: 'dpf.op_2023',                 fmt: 'num' },
+  { sel: '#kpi-val-2025',           key: 'dpf.val_2025',                fmt: 'rs_mi' },
+  { sel: '#kpi-val-2024',           key: 'dpf.val_2024',                fmt: 'rs_mi' },
+  { sel: '#kpi-val-2023',           key: 'dpf.val_2023',                fmt: 'rs_mi' },
+  { sel: '#kpi-mun-bpp',            key: 'dpf.municipios',              fmt: 'num' },
+  { sel: '#kpi-adimpl',             key: 'dpf.adimplencia',             fmt: 'pct' },
+  { sel: '#kpi-ticket',             key: 'dpf.ticket_medio',            fmt: 'rs' },
+  // DE
+  { sel: '#kpi-de-concluintes',     key: 'de.concluintes',              fmt: 'num' },
+  { sel: '#kpi-de-pab',             key: 'de.carteiras_pab',            fmt: 'num' },
+  { sel: '#kpi-de-emp',             key: 'de.carteiras_emp',            fmt: 'num' },
+  // DAP
+  { sel: '#kpi-dap-alvara',         key: 'dap.ativ_sem_alvara',         fmt: 'num' },
+  { sel: '#kpi-dap-redesim',        key: 'dap.municipios_redesim',      fmt: 'num' },
+  { sel: '#kpi-dap-operando',       key: 'dap.municipios_operando',     fmt: 'num' },
+  { sel: '#kpi-dap-viab',           key: 'dap.viab_automatica',         fmt: 'num' },
+  { sel: '#kpi-dap-empresas',       key: 'dap.empresas_6m',             fmt: 'num' },
+];
+
+// ── Formatadores ─────────────────────────────────────────────
+const fmtNum  = n => typeof n==='number' ? n.toLocaleString('pt-BR') : n;
+const fmtRsMi = n => typeof n==='number' ? 'R$ '+(n/1e6).toFixed(1)+' mi' : n;
+const fmtRs   = n => typeof n==='number' ? 'R$ '+n.toLocaleString('pt-BR') : n;
+const fmtPct  = n => typeof n==='number' ? (n*100).toFixed(0)+'%' : n;
+const FMTS = { num: fmtNum, rs_mi: fmtRsMi, rs: fmtRs, pct: fmtPct };
+
+function getPath(obj, path) {
+  return path.split('.').reduce((o,k) => o && o[k] !== undefined ? o[k] : null, obj);
+}
+
+// ── Aplica dados do JSON ao HTML ─────────────────────────────
+function aplicarDados(dados) {
+  // Período e atualização no header
+  if (dados.meta) {
+    const badge = document.getElementById('periodo-badge');
+    const lbl   = document.getElementById('upd-label');
+    if (badge) badge.textContent = dados.meta.periodo || '—';
+    if (lbl)   lbl.textContent   = 'Atualizado: ' + (dados.meta.atualizado || '—');
+  }
+
+  // Atualiza cada campo mapeado
+  MAPA.forEach(({ sel, key, fmt }) => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    const val = getPath(dados, key);
+    if (val === null || val === undefined) return;
+    el.textContent = (FMTS[fmt] || fmtNum)(val);
+  });
+
+  // Barra de loading → completa
+  const bar = document.getElementById('lbar');
+  if (bar) { bar.style.width = '100%'; setTimeout(()=>bar.style.opacity='0', 800); }
+}
+
+// ── Carrega dados do Apps Script ─────────────────────────────
+async function carregarDados() {
+  const bar = document.getElementById('lbar');
+  if (bar) bar.style.width = '40%';
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?v=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    if (bar) bar.style.width = '80%';
+    const dados = await resp.json();
+    // Só aplica se tiver dados reais (não o placeholder inicial)
+    if (dados.geral) {
+      aplicarDados(dados);
+      console.log('[SEMPE] Dados carregados:', dados.meta && dados.meta.atualizado);
+    } else {
+      throw new Error('JSON ainda sem dados reais');
+    }
+  } catch (e) {
+    console.warn('[SEMPE] Usando dados estáticos do HTML.', e.message);
+    const lbl = document.getElementById('upd-label');
+    if (lbl) lbl.textContent = 'Dados estáticos (offline)';
+    const badge = document.getElementById('periodo-badge');
+    if (badge) badge.textContent = '2023 – Maio/2026';
+    if (bar) { bar.style.width='100%'; setTimeout(()=>bar.style.opacity='0',800); }
+  }
+}
+
+carregarDados();
+</script>
+</body>
+</html>
